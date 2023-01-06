@@ -45,6 +45,12 @@ public:
     ~ScatterDataModifier();
 
     void generateData();
+    std::vector<std::vector<float>> getCarbonCoords();
+    // Returns the coords of the carbons in the atom.
+
+    std::vector<std::vector<float>> getHydrogenCoords();
+    // Returns the coords of the hydrogens in the atom.
+
 
 public Q_SLOTS:
     void setFieldLines(int lines);
@@ -62,6 +68,7 @@ private:
     QCustom3DItem *m_sun;
     int num_atoms;
     QCustom3DItem *atom;
+    std::vector<QCustom3DItem*> atoms;
     QScatterDataArray *m_magneticFieldArray;
     float m_angleOffset;
     float m_angleStep;

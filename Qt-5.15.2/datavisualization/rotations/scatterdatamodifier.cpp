@@ -37,6 +37,11 @@
 #include <QtDataVisualization/QCustom3DItem>
 #include <QtCore/qmath.h>
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+
 
 using namespace QtDataVisualization;
 
@@ -47,6 +52,7 @@ static const float ellipse_b = verticalRange;
 static const float doublePi = float(M_PI) * 2.0f;
 static const float radiansToDegrees = 360.0f / doublePi;
 static const float animationFrames = 30.0f;
+
 
 ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter)
     : m_graph(scatter),
@@ -61,48 +67,43 @@ ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter)
       m_angleStep(doublePi / m_arrowsPerLine / animationFrames)
 {
     // Initialize the atoms outside of the initialization list since it's a little bit unclear how to do so.
-//    std::vector<QCustom3DItem> atoms;
-//    QCustom3DItem atom;
-//  atoms.push_back(atom);
-//    QCustom3DItem * atom = &atom;
+    std::vector<QCustom3DItem*> atoms;
+    for (std::vector<float> coords: getCarbonCoords()) {
+        QCustom3DItem* a = new QCustom3DItem;
 
-    atom->setScaling(QVector3D(0.07f, 0.07f, 0.07f));
-    atom->setMeshFile(QStringLiteral(":/mesh/largesphere.obj"));
-    QImage atomColor = QImage(2, 2, QImage::Format_RGB32);
-    atomColor.fill(QColor(0xff, 0xff, 0xff));
-    atom->setTextureImage(atomColor);
-    atom->setPosition(QVector3D(1, 1, 1));
-    m_graph->addCustomItem(atom);
+        a->setScaling(QVector3D(0.01f, 0.01f, 0.01f));
+        a->setMeshFile(QStringLiteral(":/mesh/largesphere.obj"));
+        QImage aColor = QImage(2, 2, QImage::Format_RGB32);
+        aColor.fill(QColor(0, 0, 0));
+        a->setTextureImage(aColor);
+        float x = coords[0];
+        float y = coords[1];
+        float z = coords[2];
+        a->setPosition(QVector3D(x, y, z));
+        m_graph->addCustomItem(a);
 
+    }
+
+    for (std::vector<float> coords: getHydrogenCoords()) {
+        QCustom3DItem* a = new QCustom3DItem;
+
+        a->setScaling(QVector3D(0.005f, 0.005f, 0.005f));
+        a->setMeshFile(QStringLiteral(":/mesh/largesphere.obj"));
+        QImage aColor = QImage(2, 2, QImage::Format_RGB32);
+        aColor.fill(QColor(220, 220, 220));
+        a->setTextureImage(aColor);
+        float x = coords[0];
+        float y = coords[1];
+        float z = coords[2];
+        a->setPosition(QVector3D(x, y, z));
+        m_graph->addCustomItem(a);
+
+    }
+
+    this -> atoms = atoms;
 
     m_graph->setShadowQuality(QAbstract3DGraph::ShadowQualityNone);
     m_graph->scene()->activeCamera()->setCameraPreset(Q3DCamera::CameraPresetFront);
-
-    // Magnetic field lines use custom narrow arrow
-    m_magneticField->setItemSize(0.2f);
-    //! [3]
-    m_magneticField->setMesh(QAbstract3DSeries::MeshUserDefined);
-    m_magneticField->setUserDefinedMesh(QStringLiteral(":/mesh/narrowarrow.obj"));
-    //! [3]
-    //! [4]
-    QLinearGradient fieldGradient(0, 0, 16, 1024);
-    fieldGradient.setColorAt(0.0, Qt::black);
-    fieldGradient.setColorAt(1.0, Qt::white);
-    m_magneticField->setBaseGradient(fieldGradient);
-    m_magneticField->setColorStyle(Q3DTheme::ColorStyleRangeGradient);
-    //! [4]
-    //!
-    m_graph->addSeries(m_magneticField);
-
-
-    // For 'sun' we use a custom large sphere
-    m_sun->setScaling(QVector3D(0.07f, 0.07f, 0.07f));
-    m_sun->setMeshFile(QStringLiteral(":/mesh/largesphere.obj"));
-    QImage sunColor = QImage(2, 2, QImage::Format_RGB32);
-    sunColor.fill(QColor(0xff, 0xbb, 0x00));
-    m_sun->setTextureImage(sunColor);
-
-    m_graph->addCustomItem(m_sun);
 
     // Configure the axes according to the data
     m_graph->axisX()->setRange(-horizontalRange, horizontalRange);
@@ -177,6 +178,55 @@ void ScatterDataModifier::generateData()
         m_graph->clearSelection();
 
     m_magneticField->dataProxy()->resetArray(m_magneticFieldArray);
+}
+
+std::vector<std::vector<float>> ScatterDataModifier::getCarbonCoords() {
+    std::ifstream xyzFile("/Users/josephgmaa/Qt/Examples/Qt-5.15.2/datavisualization/rotations/molecules/cyclohexane.xyz");
+    std::string line;
+    std::vector<std::vector<float>> carbonCoords;
+    std::string atom_type;
+    float x, y, z;
+    getline(xyzFile, line);
+    getline(xyzFile, line);
+    // Read in the first line that has the number of atoms to follow.
+    while (getline(xyzFile, line)) {
+        std::vector<float> coords;
+        std::istringstream split_line(line);
+        split_line >> atom_type >> x >> y >> z;
+
+        if (atom_type == "C") {
+            coords.push_back(x);
+            coords.push_back(y);
+            coords.push_back(z);
+            carbonCoords.push_back(coords);
+        }
+    }
+
+    return carbonCoords;
+}
+
+std::vector<std::vector<float>> ScatterDataModifier::getHydrogenCoords() {
+    std::ifstream xyzFile("/Users/josephgmaa/Qt/Examples/Qt-5.15.2/datavisualization/rotations/molecules/cyclohexane.xyz");
+    std::string line;
+    std::vector<std::vector<float>> hydrogenCoords;
+    std::string atom_type;
+    float x, y, z;
+    getline(xyzFile, line);
+    getline(xyzFile, line);
+    // Read in the first line that has the number of atoms to follow.
+    while (getline(xyzFile, line)) {
+        std::vector<float> coords;
+        std::istringstream split_line(line);
+        split_line >> atom_type >> x >> y >> z;
+        if (atom_type == "H") {
+            coords.push_back(x);
+            coords.push_back(y);
+            coords.push_back(z);
+            hydrogenCoords.push_back(coords);
+        }
+    }
+
+    return hydrogenCoords;
 }
 
 void ScatterDataModifier::setFieldLines(int lines)
