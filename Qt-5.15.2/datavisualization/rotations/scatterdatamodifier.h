@@ -57,7 +57,7 @@ public Q_SLOTS:
     void setArrowsPerLine(int arrows);
     void toggleRotation();
     void triggerRotation();
-    void toggleSun();
+    void toggleRadii();
 
 private:
     Q3DScatter *m_graph;

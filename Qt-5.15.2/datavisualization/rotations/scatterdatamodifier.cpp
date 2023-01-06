@@ -41,6 +41,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <unordered_map>
 
 
 using namespace QtDataVisualization;
@@ -52,6 +53,8 @@ static const float ellipse_b = verticalRange;
 static const float doublePi = float(M_PI) * 2.0f;
 static const float radiansToDegrees = 360.0f / doublePi;
 static const float animationFrames = 30.0f;
+static const std::unordered_map<std::string, float> atomRadii = {{"C", 0.69}, {"H", 0.31}};
+std::vector<QCustom3DItem*> atoms;
 
 
 ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter)
@@ -66,8 +69,8 @@ ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter)
       m_angleOffset(0.0f),
       m_angleStep(doublePi / m_arrowsPerLine / animationFrames)
 {
+
     // Initialize the atoms outside of the initialization list since it's a little bit unclear how to do so.
-    std::vector<QCustom3DItem*> atoms;
     for (std::vector<float> coords: getCarbonCoords()) {
         QCustom3DItem* a = new QCustom3DItem;
 
@@ -81,6 +84,18 @@ ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter)
         float z = coords[2];
         a->setPosition(QVector3D(x, y, z));
         m_graph->addCustomItem(a);
+
+        // Add the radius of the atom.
+        QCustom3DItem* radius = new QCustom3DItem;
+        radius->setScaling(QVector3D(0.025f, 0.025f, 0.025f));
+        radius->setMeshFile(QStringLiteral(":/mesh/largesphere.obj"));
+        QImage rColor = QImage(2, 2, QImage::Format_RGB32);
+        rColor.fill(QColor(5, 5, 5));
+        radius->setTextureImage(rColor);
+        radius->setPosition(QVector3D(x, y, z));
+        radius->setVisible(false);
+        atoms.push_back(radius);
+        m_graph->addCustomItem(radius);
 
     }
 
@@ -97,6 +112,19 @@ ScatterDataModifier::ScatterDataModifier(Q3DScatter *scatter)
         float z = coords[2];
         a->setPosition(QVector3D(x, y, z));
         m_graph->addCustomItem(a);
+
+        // Add the radius of the atom.
+        QCustom3DItem* radius = new QCustom3DItem;
+        radius->setScaling(QVector3D(0.015f, 0.015f, 0.015f));
+        radius->setMeshFile(QStringLiteral(":/mesh/largesphere.obj"));
+        QImage rColor = QImage(2, 2, QImage::Format_RGB32);
+        rColor.fill(QColor(225, 225, 225));
+        radius->setTextureImage(rColor);
+        radius->setPosition(QVector3D(x, y, z));
+        radius->setVisible(false);
+        atoms.push_back(radius);
+        m_graph->addCustomItem(radius);
+
 
     }
 
@@ -249,9 +277,11 @@ void ScatterDataModifier::triggerRotation()
     generateData();
 }
 
-void ScatterDataModifier::toggleSun()
+void ScatterDataModifier::toggleRadii()
 {
-    m_sun->setVisible(!m_sun->isVisible());
+    for (auto& r: atoms) {
+        r -> setVisible((!r->isVisible()));
+    }
 }
 
 void ScatterDataModifier::toggleRotation()
